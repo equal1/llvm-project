@@ -474,7 +474,7 @@ LogicalResult OpToOpPassAdaptor::run(Pass *pass, Operation *op,
                                 "marked as 'IsolatedFromAbove'";
   if (!pass->canScheduleOn(*op->getName().getRegisteredInfo()))
     return op->emitOpError()
-           << "trying to schedule a pass on an unsupported operation";
+           << "trying to schedule a pass " << pass->getName() << " on an unsupported operation";
 
   // Initialize the pass state with a callback for the pass to dynamically
   // execute a pipeline on the currently visited operation.
