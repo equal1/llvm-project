@@ -6,7 +6,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "PassDetail.h"
+#include "mlir/Pass/PassDetail.h"
 #include "mlir/Pass/PassManager.h"
 #include "llvm/ADT/StringExtras.h"
 #include "llvm/Support/Format.h"

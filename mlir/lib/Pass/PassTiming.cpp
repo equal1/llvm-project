@@ -6,7 +6,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "PassDetail.h"
+
+#include "mlir/Pass/PassDetail.h"
 #include "mlir/Pass/PassManager.h"
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/Support/Threading.h"

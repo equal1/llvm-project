@@ -11,7 +11,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "mlir/Pass/Pass.h"
-#include "PassDetail.h"
+#include "mlir/Pass/PassDetail.h"
 #include "mlir/IR/Diagnostics.h"
 #include "mlir/IR/Dialect.h"
 #include "mlir/IR/OpDefinition.h"

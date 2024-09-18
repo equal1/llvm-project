@@ -6,8 +6,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "PassDetail.h"
 #include "mlir/IR/SymbolTable.h"
+#include "mlir/Pass/PassDetail.h"
 #include "mlir/Pass/PassManager.h"
 #include "llvm/Support/Format.h"
 #include "llvm/Support/FormatVariadic.h"

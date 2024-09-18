@@ -8,10 +8,9 @@
 #ifndef MLIR_PASS_PASSDETAIL_H_
 #define MLIR_PASS_PASSDETAIL_H_
 
-#include "mlir/IR/Action.h"
 #include "mlir/Pass/Pass.h"
 #include "mlir/Pass/PassManager.h"
-#include "llvm/ADT/ArrayRef.h"
+
 #include "llvm/Support/FormatVariadic.h"
 
 namespace mlir {
