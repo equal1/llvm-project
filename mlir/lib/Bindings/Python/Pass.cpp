@@ -12,12 +12,82 @@
 #include "mlir-c/Bindings/Python/Interop.h"
 #include "mlir-c/Pass.h"
 
+#include "mlir/CAPI/IR.h"
+#include "mlir/CAPI/Pass.h"
+#include "mlir/IR/OperationSupport.h"
+#include "mlir/Pass/Pass.h"
+#include "mlir/Pass/PassDetail.h"
+#include "mlir/Pass/PassInstrumentation.h"
+#include "mlir/Pass/PassManager.h"
+
+#include "pybind11/attr.h"
+#include "pybind11/pytypes.h"
+
+#include "memory"
+#include "optional"
+
 namespace py = pybind11;
 using namespace py::literals;
 using namespace mlir;
 using namespace mlir::python;
 
 namespace {
+
+struct PyPassInstrumenter {
+  PyPassInstrumenter() = default;
+  py::function runBeforePipeline;
+  py::function runAfterPipeline;
+  py::function runBeforePass;
+  py::function runAfterPass;
+  py::function runAfterPassFailed;
+  py::function runBeforeAnalysis;
+  py::function runAfterAnalysis;
+};
+
+class PyPassInstrumenterWrapper : public PassInstrumentation {
+public:
+  PyPassInstrumenterWrapper(const PyPassInstrumenter& other) : instrumenter(other) {}
+
+  void runBeforePipeline(std::optional<OperationName> name,
+                          const PipelineParentInfo &parentInfo) override {
+
+    if(!instrumenter.runBeforePipeline)
+      return;
+
+    auto opName = name.has_value() ? py::str(name.value().getStringRef().str()) : py::str("");
+    instrumenter.runBeforePipeline(py::str(parentInfo.parentPass->getName().str()), opName);
+  }
+
+  void runAfterPipeline(std::optional<OperationName> name,
+                          const PipelineParentInfo &parentInfo) override {
+    if(!instrumenter.runAfterPipeline)
+      return;
+
+    auto opName = name.has_value() ? py::str(name.value().getStringRef().str()) : py::str("");
+    instrumenter.runAfterPipeline(py::str(parentInfo.parentPass->getName().str()), opName);
+  }
+
+  void runBeforePass(Pass *pass, Operation *op) override {
+    if(!instrumenter.runBeforePass || isa<detail::OpToOpPassAdaptor>(pass))
+      return;
+    instrumenter.runBeforePass(py::str(pass->getName().str()), wrap(op));
+  }
+
+  void runAfterPass(Pass *pass, Operation *op) override {
+    if(!instrumenter.runAfterPass || isa<detail::OpToOpPassAdaptor>(pass))
+      return;
+    instrumenter.runAfterPass(py::str(pass->getName().str()), wrap(op));
+  }
+
+  void runAfterPassFailed(Pass* pass, Operation* op) override {
+    if(!instrumenter.runAfterPassFailed || isa<detail::OpToOpPassAdaptor>(pass))
+      return;
+    instrumenter.runAfterPassFailed(py::str(pass->getName().str()), wrap(op));
+  }
+
+private:
+  PyPassInstrumenter instrumenter;
+};
 
 /// Owning Wrapper around a PassManager.
 class PyPassManager {
@@ -144,5 +214,25 @@ void mlir::python::populatePassManagerSubmodule(py::module &m) {
             return printAccum.join();
           },
           "Print the textual representation for this PassManager, suitable to "
-          "be passed to `parse` for round-tripping.");
+          "be passed to `parse` for round-tripping.")
+      .def(
+          "addInstrumentation",
+          [](PyPassManager &self, PyPassInstrumenter& instrumenter) {
+            MlirPassManager passManager = self.get();
+            unwrap(passManager)->addInstrumentation(std::make_unique<PyPassInstrumenterWrapper>(instrumenter));
+          }
+      );
+
+
+  py::class_<PyPassInstrumenter>(m, "PassInstrumenter", py::module_local())
+      .def(py::init<>([](){
+        return new PyPassInstrumenter;
+      }))
+      .def_readwrite("runBeforePipeline", &PyPassInstrumenter::runBeforePipeline)
+      .def_readwrite("runAfterPipeline", &PyPassInstrumenter::runAfterPipeline)
+      .def_readwrite("runBeforePass", &PyPassInstrumenter::runBeforePass)
+      .def_readwrite("runAfterPass", &PyPassInstrumenter::runAfterPass)
+      .def_readwrite("runAfterPassFailed", &PyPassInstrumenter::runAfterPassFailed)
+      .def_readwrite("runBeforeAnalysis", &PyPassInstrumenter::runBeforeAnalysis)
+      .def_readwrite("runAfterAnalysis", &PyPassInstrumenter::runAfterAnalysis);
 }
